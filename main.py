@@ -57,7 +57,7 @@ class MainApp:
             # self.wait_for_input()
 
     def wait_for_command(self):
-        s = self.inputPad.getstr()
+        s = self.inputPad.getstr().decode()
         self.rewrite_pad(self.inputPad, "> ")
         if s == "exit" or s == b'exit':
             exit()
