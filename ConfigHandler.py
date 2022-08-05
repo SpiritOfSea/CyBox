@@ -1,11 +1,13 @@
 import os
-
+import json
+from pydoc import locate
 
 class Configuration:
 
     def __init__(self):
         self.global_params = {}
         self.local_params = {}
+        self.type = "DefaultConfig"
 
     def set_global(self, key: str, val_type: type, value, description="") -> bool:
         if isinstance(value, val_type):
@@ -43,14 +45,65 @@ class Configuration:
                 val_type, value, descr = configuration[key]
                 self.set_global(key, val_type, value, descr)
             except Exception as e:
-                return [False, f"Error while loading global conf: {e.with_traceback()}"]
+                return [False, f"Error while loading global configuration"]
         return [True, "Loaded global configuration successfully"]
+
+    def save_configuration_to_json(self, filepath: str) -> [bool, str]:
+        try:
+            if '/' not in filepath:
+                if '.json' not in filepath:
+                    filepath = "configurations/application/"+filepath+".json"
+                else:
+                    filepath = "configurations/application/" + filepath
+            json_config = {"type": self.type,
+                           "global_config": self.serialize_config(self.global_params)}
+            with open(filepath, "w") as file:
+                json.dump(json_config, file, indent=4)
+            return [True, f"Successfully saved configuration to {filepath}"]
+        except:
+            return [False, f"Failed while saving configuration to {filepath}"]
+
+    def load_configuration_from_json(self, filepath: str) -> [bool, str]:
+        try:
+            if '/' not in filepath:
+                if '.json' not in filepath:
+                    filepath = "configurations/application/"+filepath+".json"
+                else:
+                    filepath = "configurations/application/" + filepath
+            with open(filepath, "r") as file:
+                json_config = json.load(file)
+            if json_config['type'] == self.type:
+                if self.load_global_configuration(self.deserialize_config(json_config['global_config']))[0]:
+                    return [True, f"Successfully loaded configuration from {filepath}"]
+                else:
+                    return [False, f"Failed while loading configuration from {filepath}"]
+            else:
+                return [False, f"You're trying to load {json_config['type']} config to {self.type}"]
+        except:
+            return [False, f"Unexpected error occured while loading {filepath}"]
+
+    def serialize_config(self, config: dict):
+        serialized_config = {}
+        for key in config:
+            pre_arr = config[key]
+            pre_arr[0] = config[key][0].__name__
+            serialized_config[key] = pre_arr
+        return serialized_config
+
+    def deserialize_config(self, config: dict):
+        deserialized_config = {}
+        for key in config:
+            pre_arr = config[key]
+            pre_arr[0] = locate(config[key][0])
+            deserialized_config[key] = pre_arr
+        return deserialized_config
 
 
 class AppConfiguration(Configuration):
 
     def __init__(self):
         super().__init__()
+        self.type = "AppConfig"
 
         self.default_configuration = {
             "LIP": [str, "127.0.0.1", "local machine IP"],
@@ -78,3 +131,4 @@ class ModuleConfiguration(Configuration):
 
     def __init__(self):
         super().__init__()
+        self.type = "ModuleConfig"

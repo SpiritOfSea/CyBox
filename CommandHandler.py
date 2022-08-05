@@ -9,11 +9,12 @@ class CommandHandler():
         # Syntax: "command": [function, desription, takesArgument, minArg, maxArg]
         self.command_list = {
             "exit": [exit, "exit a program", False],
-            "updateconf": [self.app.update_infoPad, "update app configuration display", False],
-            "help": [self.help_menu, "show help menu", True, 0, 1],
+            "help": [self.help_menu, "show help menu; 'help ARTICLE' to get specified help", True, 0, 1],
             "setglob": [self.update_global, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
             "resetconf": [self.reset_configuration, "set configuration to default", False],
-            "clear": [self.clear_pad, "clear display", False]
+            "clear": [self.clear_pad, "clear display", False],
+            "saveconf": [self.saveconf, "'CONFNAME', save current configuration to CONFILE", True, 1, 1],
+            "loadconf": [self.loadconf, "'CONFNAME', load configuration from CONFILE", True, 1, 1]
         }
 
     def padprint(self, text: str):
@@ -60,3 +61,10 @@ class CommandHandler():
     def clear_pad(self):
         self.app.mainPad.clear()
         self.app.mainPad.refresh()
+
+    def saveconf(self, filename):
+        self.padprint(self.app.AppConfig.save_configuration_to_json(filename[0])[1])
+
+    def loadconf(self, filename):
+        self.padprint(self.app.AppConfig.load_configuration_from_json(filename[0])[1])
+        self.app.update_infoPad()

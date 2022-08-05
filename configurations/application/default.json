@@ -1,0 +1,25 @@
+{
+    "type": "AppConfig",
+    "global_config": {
+        "LIP": [
+            "str",
+            "127.0.0.1",
+            "local machine IP"
+        ],
+        "TIP": [
+            "str",
+            "127.0.0.1",
+            "target machine IP"
+        ],
+        "WORKDIR": [
+            "str",
+            "/home/kali/Projects/CyBox",
+            "current workdir"
+        ],
+        "USER": [
+            "str",
+            "kali",
+            "current user"
+        ]
+    }
+}
