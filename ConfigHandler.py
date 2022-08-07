@@ -2,13 +2,15 @@ import os
 import json
 from pydoc import locate
 
+
 class Configuration:
 
     def __init__(self):
         self.param_list = {
             "_WATCHLIST": [list, [], "watchlist"]
-                           }
+        }
         self.type = "DefaultConfig"
+        self.json_config = {}
 
     def set_param(self, key: str, val_type: type, value, description="") -> bool:
         if isinstance(value, val_type):
@@ -57,10 +59,10 @@ class Configuration:
         else:
             return [False, f"No such key in configuration: {key}"]
 
-    def load_configuration(self, configuration: dict) -> [bool, str]:
-        for key in configuration:
+    def load_param_list(self, param_list: dict) -> [bool, str]:
+        for key in param_list:
             try:
-                val_type, value, descr = configuration[key]
+                val_type, value, descr = param_list[key]
                 self.set_param(key, val_type, value, descr)
             except Exception as e:
                 return [False, f"Error while loading global configuration"]
@@ -70,35 +72,14 @@ class Configuration:
         try:
             if '/' not in filepath:
                 if '.json' not in filepath:
-                    filepath = "configurations/application/"+filepath+".json"
+                    filepath = "configurations/application/" + filepath + ".json"
                 else:
                     filepath = "configurations/application/" + filepath
-            json_config = {"type": self.type,
-                           "param_list": self.serialize_config(self.param_list)}
             with open(filepath, "w") as file:
-                json.dump(json_config, file, indent=4)
+                json.dump(self.json_config, file, indent=4)
             return [True, f"Successfully saved configuration to {filepath}"]
         except:
             return [False, f"Failed while saving configuration to {filepath}"]
-
-    def load_configuration_from_json(self, filepath: str) -> [bool, str]:
-        try:
-            if '/' not in filepath:
-                if '.json' not in filepath:
-                    filepath = "configurations/application/"+filepath+".json"
-                else:
-                    filepath = "configurations/application/" + filepath
-            with open(filepath, "r") as file:
-                json_config = json.load(file)
-            if json_config['type'] == self.type:
-                if self.load_configuration(self.deserialize_config(json_config['param_list']))[0]:
-                    return [True, f"Successfully loaded configuration from {filepath}"]
-                else:
-                    return [False, f"Failed while loading configuration from {filepath}"]
-            else:
-                return [False, f"You're trying to load {json_config['type']} config to {self.type}"]
-        except:
-            return [False, f"Unexpected error occurred while loading {filepath}"]
 
     def serialize_config(self, config: dict):
         serialized_config = {}
@@ -140,10 +121,34 @@ class AppConfiguration(Configuration):
         return username
 
     def load_default_configuration(self) -> [bool, str]:
-        if self.load_configuration(self.default_configuration)[0]:
+        if self.load_param_list(self.default_configuration)[0]:
             return [True, "Successfully loaded default configuration"]
         else:
             return [False, "Error occurred while loading default configuration"]
+
+    def load_configuration_from_json(self, filepath: str) -> [bool, str]:
+        try:
+            if '/' not in filepath:
+                if '.json' not in filepath:
+                    filepath = "configurations/application/" + filepath + ".json"
+                else:
+                    filepath = "configurations/application/" + filepath
+            with open(filepath, "r") as file:
+                json_config = json.load(file)
+            if json_config['type'] == self.type:
+                if self.load_param_list(self.deserialize_config(json_config['param_list']))[0]:
+                    return [True, f"Successfully loaded configuration from {filepath}"]
+                else:
+                    return [False, f"Failed while loading configuration from {filepath}"]
+            else:
+                return [False, f"You're trying to load {json_config['type']} config to {self.type}"]
+        except:
+            return [False, f"Unexpected error occurred while loading {filepath}"]
+
+    def save_configuration_to_json(self, filepath: str) -> [bool, str]:
+        self.json_config = {"type": self.type,
+                            "param_list": self.serialize_config(self.param_list)}
+        return super().save_configuration_to_json(filepath)
 
 
 class ModuleConfiguration(Configuration):
@@ -151,3 +156,28 @@ class ModuleConfiguration(Configuration):
     def __init__(self):
         super().__init__()
         self.type = "ModuleConfig"
+        self.action_list = {}
+        self.default_configuration = {
+            "params": {
+                "NAME": [str, "No module", "module name"],
+                "_WATCHLIST": [list, ["NAME"], "watchlist"]
+            },
+            "commands": {
+                "test": {"type": "os",
+                         "command": "echo %USER% %NAME%",
+                         "arguments": {
+                             "%USER%": ["appconf", "USER"],
+                             "%NAME%": ["modconf", "NAME"]}
+                         },
+                "lswdir": {"type": "os",
+                           "command": "ls %WDIR%",
+                           "arguments": {
+                               "%WDIR%": ["appconf", "WORKDIR"]}
+                           }
+                         }
+            }
+
+    def load_default_configuration(self):
+        self.load_param_list(self.default_configuration["params"])
+        self.action_list = self.default_configuration["commands"]
+

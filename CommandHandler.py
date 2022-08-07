@@ -37,6 +37,8 @@ class CommandHandler:
                 self.padprint("Provided unknown arguments")
             else:
                 self.command_list[main_command][0]()
+        elif main_command in self.app.CurrentModule.get_command_list():
+            self.app.CurrentModule.process_command(main_command, arguments)
         else:
             self.padprint(f"Unknown command: {main_command}")
 
@@ -52,16 +54,16 @@ class CommandHandler:
 
     def update_param(self, arguments: [str, str]):
         self.padprint(self.app.AppConfig.update_param(arguments[0], arguments[1])[1])
-        self.app.update_infoPad()
+        self.app.update_infopad()
 
     def conf_handler(self, arguments):
         if arguments[0] == "reset":
             self.padprint(self.app.AppConfig.load_default_configuration()[1])
-            self.app.update_infoPad()
+            self.app.update_infopad()
         elif arguments[0] == "load":
             if len(arguments) == 2:
                 self.padprint(self.app.AppConfig.load_configuration_from_json(arguments[1])[1])
-                self.app.update_infoPad()
+                self.app.update_infopad()
             else:
                 self.padprint("Please, provide CONFNAME to load")
         elif arguments[0] == "save":
@@ -92,12 +94,12 @@ class CommandHandler:
                 self.padprint(self.app.AppConfig.add_watch(key)[1])
             else:
                 self.padprint(self.app.AppConfig.delete_watch(key)[1])
-            self.app.update_infoPad()
+            self.app.update_infopad()
         elif target == "module":
             if mode == "add":
-                self.padprint(self.app.CurrentModuleConfig.add_watch(key)[1])
+                self.padprint(self.app.CurrentModule.add_watch(key)[1])
             else:
-                self.padprint(self.app.CurrentModuleConfig.delete_watch(key)[1])
-            self.app.update_infoPad()
+                self.padprint(self.app.CurrentModule.delete_watch(key)[1])
+            self.app.update_infopad()
         else:
             self.padprint("Please, provide correct target: 'app' or 'module'")

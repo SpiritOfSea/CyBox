@@ -3,6 +3,7 @@ from curses.textpad import Textbox, rectangle
 import time
 from ConfigHandler import *
 import CommandHandler
+import Module
 
 
 class MainApp:
@@ -21,7 +22,7 @@ class MainApp:
 """
         self.AppConfig = AppConfiguration()
         self.AppConfig.load_default_configuration()
-        self.CurrentModuleConfig = ModuleConfiguration()
+        self.CurrentModule = Module.Module(self)
         self.CommandHandler = CommandHandler.CommandHandler(self)
 
     def initialize(self):
@@ -54,7 +55,7 @@ class MainApp:
         # Prepare default content
         self.rewrite_pad(self.logoPad, self.logo)
         self.rewrite_pad(self.inputPad, "> ")
-        self.update_infoPad()
+        self.update_infopad()
 
         # Place cursor to inputPad
         self.inputPad.move(0, 2)
@@ -85,7 +86,7 @@ class MainApp:
         pad.addstr(str(text))
         pad.refresh()
 
-    def update_infoPad(self):
+    def update_infopad(self):
         self.infoPad.clear()
         self.write_pad(self.infoPad, "=====")
         for key in self.AppConfig.get_all_params():
@@ -93,10 +94,10 @@ class MainApp:
                 self.write_pad(self.infoPad, key + ": ", True, 2)
                 self.write_pad(self.infoPad, str(self.AppConfig.get_param(key)[1]))
         self.write_pad(self.infoPad, "=====")
-        for key in self.CurrentModuleConfig.get_all_params():
-            if not key.startswith("_") and key in self.CurrentModuleConfig.get_param("_WATCHLIST")[1]:
+        for key in self.CurrentModule.ModConfig.get_all_params():
+            if not key.startswith("_") and key in self.CurrentModule.ModConfig.get_param("_WATCHLIST")[1]:
                 self.write_pad(self.infoPad, key + ": ", True, 2)
-                self.write_pad(self.infoPad, str(self.CurrentModuleConfig.get_param(key)[1]))
+                self.write_pad(self.infoPad, str(self.CurrentModule.ModConfig.get_param(key)[1]))
 
 
 if __name__ == "__main__":
