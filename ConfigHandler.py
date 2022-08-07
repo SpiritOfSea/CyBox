@@ -157,6 +157,7 @@ class ModuleConfiguration(Configuration):
         super().__init__()
         self.type = "ModuleConfig"
         self.action_list = {}
+        self.pipe_list = {}
         self.default_configuration = {
             "params": {
                 "NAME": [str, "No module", "module name"],
@@ -164,20 +165,39 @@ class ModuleConfiguration(Configuration):
             },
             "commands": {
                 "test": {"type": "os",
-                         "command": "echo %USER% %NAME%",
-                         "arguments": {
-                             "%USER%": ["appconf", "USER"],
-                             "%NAME%": ["modconf", "NAME"]}
+                         "command": "echo '%USER% %NAME%'",
+                         "description": "echo random info",
+                         "arguments": {     # %placeholder%: [%conf_type%, %param_name%, %can_be_piped%]
+                             "%USER%": ["appconf", "USER", False],
+                             "%NAME%": ["modconf", "NAME", True]}
                          },
                 "lswdir": {"type": "os",
                            "command": "ls %WDIR%",
+                           "description": "ls workdir",
                            "arguments": {
-                               "%WDIR%": ["appconf", "WORKDIR"]}
-                           }
-                         }
+                               "%WDIR%": ["appconf", "WORKDIR", True]}
+                           },
+                "ip": {"type": "os",
+                       "command": """ifconfig -a | grep -E -a -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" | head -1""",
+                       "description": "get current machine ip",
+                       "arguments": {}
+                       }
+            },
+            "pipes": {
+                "test_pipe": [     # [%target_module%, %command%, %print_result%, %takes_pipe%, ~%piped_param%
+                    ["self", "lswdir", False, False],
+                    ["self", "test", True, True, "%NAME%"]
+                ],
+                "selfip": [
+                    ["self", "ip", False, False],
+                    ["app", "set LIP %PIPE%", True, True]
+                ]
             }
+        }
 
     def load_default_configuration(self):
         self.load_param_list(self.default_configuration["params"])
         self.action_list = self.default_configuration["commands"]
+        self.pipe_list = self.default_configuration["pipes"]
+
 

@@ -14,7 +14,7 @@ class CommandHandler:
             "set": [self.update_param, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
             "conf": [self.conf_handler, "'reset|ls|save|load CONFNAME' configuration handler", True, 1, 2],
             "clear": [self.clear_pad, "clear display", False],
-            "watch": [self.watch, "'add|del TARGET KEY', add param to watchlist", True, 3, 3]
+            "watch": [self.watch, "'add|del TARGET KEY', add param to watchlist", True, 3, 3],
         }
 
     def padprint(self, text: str):
@@ -25,22 +25,24 @@ class CommandHandler:
         if main_command in self.command_list:
             if self.command_list[main_command][2] and arguments:
                 if self.command_list[main_command][3] <= len(arguments) <= self.command_list[main_command][4]:
-                    self.padprint(self.command_list[main_command][0](arguments))
+                    return self.command_list[main_command][0](arguments)
                 else:
-                    self.padprint(f"Provided {len(arguments)} arguments, needed [{self.command_list[main_command][3]}:{self.command_list[main_command][4]}]")
+                    return f"Provided {len(arguments)} arguments, needed [{self.command_list[main_command][3]}:{self.command_list[main_command][4]}]"
             elif self.command_list[main_command][2] and not arguments:
                 if self.command_list[main_command][3] == 0:
-                    self.padprint(self.command_list[main_command][0]())
+                    return self.command_list[main_command][0]()
                 else:
-                    self.padprint("Please, provide arguments")
+                    return "Please, provide arguments"
             elif not self.command_list[main_command][2] and arguments:
-                self.padprint("Provided unknown arguments")
+                return "Provided unknown arguments"
             else:
-                self.padprint(self.command_list[main_command][0]())
+                return self.command_list[main_command][0]()
         elif main_command in self.app.CurrentModule.get_command_list():
-            self.padprint(self.app.CurrentModule.process_command(main_command, arguments))
+            return self.app.CurrentModule.process_command(main_command, arguments)
+        elif main_command in self.app.CurrentModule.get_pipe_list():
+            return self.app.CurrentModule.process_pipe(main_command)
         else:
-            self.padprint(f"Unknown command: {main_command}")
+            return f"Unknown command: {main_command}"
 
     def help_menu(self, item=None) -> str:
         if item == ['params']:
@@ -52,9 +54,20 @@ class CommandHandler:
             for key in self.app.CurrentModule.ModConfig.param_list:
                 output += key + " - " + self.app.CurrentModule.ModConfig.param_list[key][2]+"\n"
         else:
-            output = "Available commands:\n"
+            output = "Available app commands:\n"
             for key in sorted(self.command_list):
                 output += key + " - " + self.command_list[key][1] + "\n"
+            output += "===========\n"
+            output += "Available module commands:\n"
+            for key in sorted(self.app.CurrentModule.get_command_list()):
+                output += key + " - " + self.app.CurrentModule.get_command_list()[key]['description'] + "\n"
+            output += "===========\n"
+            output += "Available pipes:"
+            for key in sorted(self.app.CurrentModule.get_pipe_list()):
+                output += "\n" + key + ":"
+                for cmd in self.app.CurrentModule.get_pipe_list()[key]:
+                    output += "\n    - " + cmd[1]
+            output += "\n"
         return output
 
     def update_param(self, arguments: [str, str]) -> str:

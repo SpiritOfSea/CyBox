@@ -71,7 +71,7 @@ class MainApp:
         command = self.inputPad.getstr().decode()
         self.rewrite_pad(self.inputPad, "> ")
         if command:
-            self.CommandHandler.process_command(command)
+            self.write_pad(self.mainPad, self.CommandHandler.process_command(command))
         self.inputPad.move(0, 2)
 
     def write_pad(self, pad, text, sameline=False, color=0):
