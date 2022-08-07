@@ -86,17 +86,17 @@ class MainApp:
         pad.refresh()
 
     def update_infoPad(self):
-        current_app_config = self.AppConfig.get_all_globals()
-        current_module_config = self.CurrentModuleConfig.get_all_globals()
         self.infoPad.clear()
         self.write_pad(self.infoPad, "=====")
-        for key in current_app_config:
-            self.write_pad(self.infoPad, key + ": ", True, 2)
-            self.write_pad(self.infoPad, str(current_app_config[key][1]))
+        for key in self.AppConfig.get_all_params():
+            if not key.startswith("_") and key in self.AppConfig.get_param("_WATCHLIST")[1]:
+                self.write_pad(self.infoPad, key + ": ", True, 2)
+                self.write_pad(self.infoPad, str(self.AppConfig.get_param(key)[1]))
         self.write_pad(self.infoPad, "=====")
-        for key in current_module_config:
-            self.write_pad(self.infoPad, key + ": ", True, 2)
-            self.write_pad(self.infoPad, str(current_module_config[key][1]))
+        for key in self.CurrentModuleConfig.get_all_params():
+            if not key.startswith("_") and key in self.CurrentModuleConfig.get_param("_WATCHLIST")[1]:
+                self.write_pad(self.infoPad, key + ": ", True, 2)
+                self.write_pad(self.infoPad, str(self.CurrentModuleConfig.get_param(key)[1]))
 
 
 if __name__ == "__main__":

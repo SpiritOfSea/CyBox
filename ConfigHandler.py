@@ -5,45 +5,63 @@ from pydoc import locate
 class Configuration:
 
     def __init__(self):
-        self.global_params = {}
-        self.local_params = {}
+        self.param_list = {
+            "_WATCHLIST": [list, [], "watchlist"]
+                           }
         self.type = "DefaultConfig"
 
-    def set_global(self, key: str, val_type: type, value, description="") -> bool:
+    def set_param(self, key: str, val_type: type, value, description="") -> bool:
         if isinstance(value, val_type):
-            self.global_params[key] = [val_type, value, description]
+            self.param_list[key] = [val_type, value, description]
             return True
         else:
             try:
-                self.global_params[key] = [val_type, val_type(value), description]
+                self.param_list[key] = [val_type, val_type(value), description]
                 return True
             except Exception as e:
                 return False
 
-    def update_global(self, key: str, value) -> [bool, str]:
-        if key in self.global_params:
+    def update_param(self, key: str, value) -> [bool, str]:
+        if key in self.param_list:
             try:
-                self.global_params[key][1] = self.global_params[key][0](value)
+                self.param_list[key][1] = self.param_list[key][0](value)
                 return [True, f"Successfully set {key} to {value}"]
             except Exception as e:
-                return [False, f"'{value}' is not {self.global_params[key][0]} type"]
+                return [False, f"'{value}' is not {self.param_list[key][0]} type"]
         else:
             return [False, f"There is no {key} global variable available"]
 
-    def get_global(self, key):
-        if key in self.global_params:
-            return self.global_params[key][1:2]
+    def get_param(self, key):
+        if key in self.param_list:
+            return self.param_list[key]
         else:
             raise KeyError
 
-    def get_all_globals(self):
-        return self.global_params
+    def get_all_params(self):
+        return self.param_list
 
-    def load_global_configuration(self, configuration: dict) -> [bool, str]:
+    def add_watch(self, key: str) -> [bool, str]:
+        if not key.startswith("_"):
+            if key in self.param_list:
+                self.param_list["_WATCHLIST"][1].append(key)
+                return [True, f"Successfully added {key} to watchlist"]
+            else:
+                return [False, f"No such key in configuration: {key}"]
+        else:
+            return [False, "You cannot watch private params"]
+
+    def delete_watch(self, key: str) -> [bool, str]:
+        if key in self.param_list:
+            self.param_list["_WATCHLIST"][1].remove(key)
+            return [True, f"Successfully deleted {key} from watchlist"]
+        else:
+            return [False, f"No such key in configuration: {key}"]
+
+    def load_configuration(self, configuration: dict) -> [bool, str]:
         for key in configuration:
             try:
                 val_type, value, descr = configuration[key]
-                self.set_global(key, val_type, value, descr)
+                self.set_param(key, val_type, value, descr)
             except Exception as e:
                 return [False, f"Error while loading global configuration"]
         return [True, "Loaded global configuration successfully"]
@@ -56,7 +74,7 @@ class Configuration:
                 else:
                     filepath = "configurations/application/" + filepath
             json_config = {"type": self.type,
-                           "global_config": self.serialize_config(self.global_params)}
+                           "param_list": self.serialize_config(self.param_list)}
             with open(filepath, "w") as file:
                 json.dump(json_config, file, indent=4)
             return [True, f"Successfully saved configuration to {filepath}"]
@@ -73,14 +91,14 @@ class Configuration:
             with open(filepath, "r") as file:
                 json_config = json.load(file)
             if json_config['type'] == self.type:
-                if self.load_global_configuration(self.deserialize_config(json_config['global_config']))[0]:
+                if self.load_configuration(self.deserialize_config(json_config['param_list']))[0]:
                     return [True, f"Successfully loaded configuration from {filepath}"]
                 else:
                     return [False, f"Failed while loading configuration from {filepath}"]
             else:
                 return [False, f"You're trying to load {json_config['type']} config to {self.type}"]
         except:
-            return [False, f"Unexpected error occured while loading {filepath}"]
+            return [False, f"Unexpected error occurred while loading {filepath}"]
 
     def serialize_config(self, config: dict):
         serialized_config = {}
@@ -109,7 +127,8 @@ class AppConfiguration(Configuration):
             "LIP": [str, "127.0.0.1", "local machine IP"],
             "TIP": [str, "127.0.0.1", "target machine IP"],
             "WORKDIR": [str, self.get_workdir(), "current workdir"],
-            "USER": [str, self.get_user(), "current user"]
+            "USER": [str, self.get_user(), "current user"],
+            "_WATCHLIST": [list, ["LIP", "TIP", "WORKDIR", "USER"], "watchlist"]
         }
 
     def get_workdir(self):
@@ -121,7 +140,7 @@ class AppConfiguration(Configuration):
         return username
 
     def load_default_configuration(self) -> [bool, str]:
-        if self.load_global_configuration(self.default_configuration)[0]:
+        if self.load_configuration(self.default_configuration)[0]:
             return [True, "Successfully loaded default configuration"]
         else:
             return [False, "Error occurred while loading default configuration"]

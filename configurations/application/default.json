@@ -1,6 +1,16 @@
 {
     "type": "AppConfig",
-    "global_config": {
+    "param_list": {
+        "_WATCHLIST": [
+            "list",
+            [
+                "LIP",
+                "TIP",
+                "WORKDIR",
+                "USER"
+            ],
+            "watchlist"
+        ],
         "LIP": [
             "str",
             "127.0.0.1",

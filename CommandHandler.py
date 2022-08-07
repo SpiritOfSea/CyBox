@@ -1,20 +1,20 @@
 import main
+import os
 
 
-class CommandHandler():
+class CommandHandler:
 
     def __init__(self, app: main.MainApp):
         self.app = app
 
-        # Syntax: "command": [function, desription, takesArgument, minArg, maxArg]
+        # Syntax: "command": [function, description, takesArgument, minArg, maxArg]
         self.command_list = {
             "exit": [exit, "exit a program", False],
             "help": [self.help_menu, "show help menu; 'help ARTICLE' to get specified help", True, 0, 1],
-            "setglob": [self.update_global, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
-            "resetconf": [self.reset_configuration, "set configuration to default", False],
+            "set": [self.update_param, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
+            "conf": [self.conf_handler, "'reset|ls|save|load CONFNAME' configuration handler", True, 1, 2],
             "clear": [self.clear_pad, "clear display", False],
-            "saveconf": [self.saveconf, "'CONFNAME', save current configuration to CONFILE", True, 1, 1],
-            "loadconf": [self.loadconf, "'CONFNAME', load configuration from CONFILE", True, 1, 1]
+            "watch": [self.watch, "'add|del TARGET KEY', add param to watchlist", True, 3, 3]
         }
 
     def padprint(self, text: str):
@@ -45,26 +45,59 @@ class CommandHandler():
             self.padprint("Available commands:")
             for key in sorted(self.command_list):
                 self.padprint(key+" - "+self.command_list[key][1])
-        elif item == ['glob']:
-            self.padprint("Global variables:")
-            for key in self.app.AppConfig.global_params:
-                self.padprint(key + " - "+self.app.AppConfig.global_params[key][2])
+        elif item == ['params']:
+            self.padprint("List of parameters:")
+            for key in self.app.AppConfig.param_list:
+                self.padprint(key + " - " + self.app.AppConfig.param_list[key][2])
 
-    def update_global(self, arguments: [str, str]):
-        self.padprint(self.app.AppConfig.update_global(arguments[0], arguments[1])[1])
+    def update_param(self, arguments: [str, str]):
+        self.padprint(self.app.AppConfig.update_param(arguments[0], arguments[1])[1])
         self.app.update_infoPad()
 
-    def reset_configuration(self):
-        self.padprint(self.app.AppConfig.load_default_configuration()[1])
-        self.app.update_infoPad()
+    def conf_handler(self, arguments):
+        if arguments[0] == "reset":
+            self.padprint(self.app.AppConfig.load_default_configuration()[1])
+            self.app.update_infoPad()
+        elif arguments[0] == "load":
+            if len(arguments) == 2:
+                self.padprint(self.app.AppConfig.load_configuration_from_json(arguments[1])[1])
+                self.app.update_infoPad()
+            else:
+                self.padprint("Please, provide CONFNAME to load")
+        elif arguments[0] == "save":
+            if len(arguments) == 2:
+                self.padprint(self.app.AppConfig.save_configuration_to_json(arguments[1])[1])
+            else:
+                self.padprint("Please, provide CONFNAME to save")
+        elif arguments[0] == "ls":
+            self.padprint("Configuration files in 'configurations/application' directory:")
+            for file in os.listdir("configurations/application"):
+                self.padprint(file)
+        else:
+            self.padprint("Please, use 'reset', 'ls', 'load' or 'save' methods")
 
     def clear_pad(self):
         self.app.mainPad.clear()
         self.app.mainPad.refresh()
 
-    def saveconf(self, filename):
-        self.padprint(self.app.AppConfig.save_configuration_to_json(filename[0])[1])
-
-    def loadconf(self, filename):
-        self.padprint(self.app.AppConfig.load_configuration_from_json(filename[0])[1])
-        self.app.update_infoPad()
+    def watch(self, arguments: [str, str, str]):
+        mode = arguments[0]
+        if not mode == "add" and not mode == "del":
+            self.padprint("Please, use 'add' or 'del' methods")
+            return
+        target = arguments[1]
+        key = arguments[2]
+        if target == "app":
+            if mode == "add":
+                self.padprint(self.app.AppConfig.add_watch(key)[1])
+            else:
+                self.padprint(self.app.AppConfig.delete_watch(key)[1])
+            self.app.update_infoPad()
+        elif target == "module":
+            if mode == "add":
+                self.padprint(self.app.CurrentModuleConfig.add_watch(key)[1])
+            else:
+                self.padprint(self.app.CurrentModuleConfig.delete_watch(key)[1])
+            self.app.update_infoPad()
+        else:
+            self.padprint("Please, provide correct target: 'app' or 'module'")
