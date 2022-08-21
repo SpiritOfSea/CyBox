@@ -72,9 +72,9 @@ class Configuration:
         try:
             if '/' not in filepath:
                 if '.json' not in filepath:
-                    filepath = "configurations/application/" + filepath + ".json"
+                    filepath = f"configurations/{self.type}/" + filepath + ".json"
                 else:
-                    filepath = "configurations/application/" + filepath
+                    filepath = f"configurations/{self.type}/" + filepath
             with open(filepath, "w") as file:
                 json.dump(self.json_config, file, indent=4)
             return [True, f"Successfully saved configuration to {filepath}"]
@@ -130,13 +130,13 @@ class AppConfiguration(Configuration):
         try:
             if '/' not in filepath:
                 if '.json' not in filepath:
-                    filepath = "configurations/application/" + filepath + ".json"
+                    filepath = f"configurations/{self.type}/" + filepath + ".json"
                 else:
-                    filepath = "configurations/application/" + filepath
+                    filepath = f"configurations/{self.type}/" + filepath
             with open(filepath, "r") as file:
                 json_config = json.load(file)
             if json_config['type'] == self.type:
-                if self.load_param_list(self.deserialize_config(json_config['param_list']))[0]:
+                if self.load_param_list(self.deserialize_config(json_config['params']))[0]:
                     return [True, f"Successfully loaded configuration from {filepath}"]
                 else:
                     return [False, f"Failed while loading configuration from {filepath}"]
@@ -147,7 +147,7 @@ class AppConfiguration(Configuration):
 
     def save_configuration_to_json(self, filepath: str) -> [bool, str]:
         self.json_config = {"type": self.type,
-                            "param_list": self.serialize_config(self.param_list)}
+                            "params": self.serialize_config(self.param_list)}
         return super().save_configuration_to_json(filepath)
 
 
@@ -159,45 +159,51 @@ class ModuleConfiguration(Configuration):
         self.action_list = {}
         self.pipe_list = {}
         self.default_configuration = {
-            "params": {
-                "NAME": [str, "No module", "module name"],
-                "_WATCHLIST": [list, ["NAME"], "watchlist"]
-            },
-            "commands": {
-                "test": {"type": "os",
-                         "command": "echo '%USER% %NAME%'",
-                         "description": "echo random info",
-                         "arguments": {     # %placeholder%: [%conf_type%, %param_name%, %can_be_piped%]
-                             "%USER%": ["appconf", "USER", False],
-                             "%NAME%": ["modconf", "NAME", True]}
-                         },
-                "lswdir": {"type": "os",
-                           "command": "ls %WDIR%",
-                           "description": "ls workdir",
-                           "arguments": {
-                               "%WDIR%": ["appconf", "WORKDIR", True]}
-                           },
-                "ip": {"type": "os",
-                       "command": """ifconfig -a | grep -E -a -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" | head -1""",
-                       "description": "get current machine ip",
-                       "arguments": {}
-                       }
-            },
-            "pipes": {
-                "test_pipe": [     # [%target_module%, %command%, %print_result%, %takes_pipe%, ~%piped_param%
-                    ["self", "lswdir", False, False],
-                    ["self", "test", True, True, "%NAME%"]
-                ],
-                "selfip": [
-                    ["self", "ip", False, False],
-                    ["app", "set LIP %PIPE%", True, True]
-                ]
-            }
+            # "params": {},
+            # "actions": {
+            #     # "test": {"type": "os",
+            #     #          "command": "echo '%USER% %NAME%'",
+            #     #          "description": "echo random info",
+            #     #          "arguments": {     # %placeholder%: [%conf_type%, %param_name%, %can_be_piped%]
+            #     #              "%USER%": ["appconf", "USER", False],
+            #     #          }
+            # },
+            # "pipes": {
+            #     # "test_pipe": [     # [%target_module%, %command%, %print_result%, %takes_pipe%, ~%piped_param%
+            #     #     ["self", "lswdir", False, False],
+            #     #     ["self", "test", True, True, "%NAME%"]
+            #     # ]
+            # }
         }
 
     def load_default_configuration(self):
         self.load_param_list(self.default_configuration["params"])
-        self.action_list = self.default_configuration["commands"]
+        self.action_list = self.default_configuration["actions"]
         self.pipe_list = self.default_configuration["pipes"]
 
+    def save_configuration_to_json(self, filepath: str) -> [bool, str]:
+        self.json_config = {"type": self.type,
+                            "params": self.serialize_config(self.param_list),
+                            "actions": self.action_list,
+                            "pipes": self.pipe_list}
+        return super().save_configuration_to_json(filepath)
+
+    def load_configuration_from_json(self, filepath: str) -> [bool, str]:
+        try:
+            if '/' not in filepath:
+                if '.json' not in filepath:
+                    filepath = f"configurations/{self.type}/" + filepath + ".json"
+                else:
+                    filepath = f"configurations/{self.type}/" + filepath
+            with open(filepath, "r") as file:
+                json_config = json.load(file)
+            if json_config['type'] == self.type:
+                self.load_param_list(self.deserialize_config(json_config['params']))
+                self.action_list = json_config["actions"]
+                self.pipe_list = json_config["pipes"]
+                return [True, f"Module {self.get_param('NAME')[1]} successfully loaded"]
+            else:
+                return [False, f"You're trying to load {json_config['type']} config to {self.type}"]
+        except:
+            return [False, f"Unexpected error occurred while loading {filepath}"]
 

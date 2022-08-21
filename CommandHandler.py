@@ -13,6 +13,8 @@ class CommandHandler:
             "help": [self.help_menu, "show help menu; 'help ARTICLE' to get specified help", True, 0, 1],
             "set": [self.update_param, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
             "conf": [self.conf_handler, "'reset|ls|save|load CONFNAME' configuration handler", True, 1, 2],
+            "save": [self.save_module, "'CONFNAME' save module state to CONFNAME", True, 1, 1],
+            "load": [self.load_module, "'CONFNAME' load module", True, 1, 1],
             "clear": [self.clear_pad, "clear display", False],
             "watch": [self.watch, "'add|del TARGET KEY', add param to watchlist", True, 3, 3],
         }
@@ -71,7 +73,9 @@ class CommandHandler:
         return output
 
     def update_param(self, arguments: [str, str]) -> str:
-        output = self.app.AppConfig.update_param(arguments[0], arguments[1])[1]
+        result, output = self.app.AppConfig.update_param(arguments[0], arguments[1])
+        if not result:
+            output = self.app.CurrentModule.ModConfig.update_param(arguments[0], arguments[1])[1]
         self.app.update_infopad()
         return output
 
@@ -99,9 +103,26 @@ class CommandHandler:
 
         return output
 
-    def clear_pad(self):
+    def save_module(self, arguments) -> str:
+        if len(arguments) == 1:
+            output = self.app.CurrentModule.save_module(arguments[0])[1]
+        else:
+            output = "Please, provide correct CONFNAME to save"
+        return output
+
+    def load_module(self, arguments) -> str:
+        if len(arguments) == 1:
+            output = self.app.CurrentModule.load_module(arguments[0])[1]
+            self.app.update_infopad()
+        else:
+            output = "Please, provide CONFNAME to load"
+        return output
+
+    def clear_pad(self)->str:
         self.app.mainPad.clear()
         self.app.mainPad.refresh()
+
+        return ""
 
     def watch(self, arguments: [str, str, str]) -> str:
         mode = arguments[0]

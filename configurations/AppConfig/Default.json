@@ -1,6 +1,6 @@
 {
     "type": "AppConfig",
-    "param_list": {
+    "params": {
         "_WATCHLIST": [
             "list",
             [

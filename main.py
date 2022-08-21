@@ -22,7 +22,7 @@ class MainApp:
 """
         self.AppConfig = AppConfiguration()
         self.AppConfig.load_default_configuration()
-        self.CurrentModule = Module.Module(self)
+        self.CurrentModule = Module.Module(self, "Default")
         self.CommandHandler = CommandHandler.CommandHandler(self)
 
     def initialize(self):

@@ -1,0 +1,19 @@
+{
+    "type": "ModuleConfig",
+    "params": {
+        "_WATCHLIST": [
+            "list",
+            [
+                "NAME"
+            ],
+            "watchlist"
+        ],
+        "NAME": [
+            "str",
+            "No module",
+            "module name"
+        ]
+    },
+    "actions": {},
+    "pipes": {}
+}

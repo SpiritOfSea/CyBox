@@ -5,11 +5,8 @@ import subprocess
 class Module:
     def __init__(self, app, module="None"):
         self.app = app
-        if module == "None":
-            self.ModConfig = ConfigHandler.ModuleConfiguration()
-            self.ModConfig.load_default_configuration()
-        else:
-            self.load_module(module)
+        self.ModConfig = ConfigHandler.ModuleConfiguration()
+        self.load_module(module)
 
     def process_command(self, action, arguments=None) -> str:
         action = self.ModConfig.action_list[action]
@@ -60,8 +57,11 @@ class Module:
     def get_pipe_list(self):
         return self.ModConfig.pipe_list
 
-    def load_module(self, module: str):
-        pass
+    def load_module(self, module: str) -> [bool, str]:
+        return self.ModConfig.load_configuration_from_json(module)
+
+    def save_module(self, module: str) -> [bool, str]:
+        return self.ModConfig.save_configuration_to_json(module)
 
     def padprint(self, text: str):
         self.app.write_pad(self.app.mainPad, text)
