@@ -71,7 +71,7 @@ class MainApp:
         command = self.inputPad.getstr().decode()
         self.rewrite_pad(self.inputPad, "> ")
         if command:
-            self.write_pad(self.mainPad, self.CommandHandler.process_command(command))
+            self.write_pad(self.mainPad, self.CommandHandler.process_command(command).strip()+"\n")
         self.inputPad.move(0, 2)
 
     def write_pad(self, pad, text, sameline=False, color=0):
@@ -85,6 +85,9 @@ class MainApp:
         pad.clear()
         pad.addstr(str(text))
         pad.refresh()
+
+    def get_workdir(self) -> str:
+        return self.AppConfig.get_workdir()
 
     def update_infopad(self):
         self.infoPad.clear()

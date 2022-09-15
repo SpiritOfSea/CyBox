@@ -13,16 +13,20 @@ class CommandHandler:
             "help": [self.help_menu, "show help menu; 'help ARTICLE' to get specified help", True, 0, 1],
             "set": [self.update_param, "'VARIABLE VALUE' set global variable to specified value", True, 2, 2],
             "conf": [self.conf_handler, "'reset|ls|save|load CONFNAME' configuration handler", True, 1, 2],
-            "save": [self.save_module, "'CONFNAME' save module state to CONFNAME", True, 1, 1],
-            "load": [self.load_module, "'CONFNAME' load module", True, 1, 1],
+            "save": [self.save_module, "'MODNAME' save module state to MODNAME", True, 1, 1],
+            "load": [self.load_module, "'MODNAME' load module", True, 1, 1],
             "clear": [self.clear_pad, "clear display", False],
             "watch": [self.watch, "'add|del TARGET KEY', add param to watchlist", True, 3, 3],
+            "cat": [self.cat, "'LOGNAME' output file content", True, 1, 1],
+            "ls": [self.ls, "list current WORKDIR content", False],
+            "rm": [self.rm, "'FILE' remove file from WOKRDIR", True, 1, 1],
         }
 
     def padprint(self, text: str):
         self.app.write_pad(self.app.mainPad, text)
 
     def process_command(self, command: str):
+        self.padprint("> "+command+"\n")
         main_command, arguments = command.split()[0].lower(), command.split()[1:]
         if main_command in self.command_list:
             if self.command_list[main_command][2] and arguments:
@@ -48,27 +52,27 @@ class CommandHandler:
 
     def help_menu(self, item=None) -> str:
         if item == ['params']:
-            output = "List of app parameters:\n"
+            output = "List of app parameters:\n\n"
             for key in self.app.AppConfig.param_list:
                 output += key + " - " + self.app.AppConfig.param_list[key][2]+"\n"
             output += "===========\n"
-            output += "List of module parameters:\n"
+            output += "List of module parameters:\n\n"
             for key in self.app.CurrentModule.ModConfig.param_list:
                 output += key + " - " + self.app.CurrentModule.ModConfig.param_list[key][2]+"\n"
         else:
-            output = "Available app commands:\n"
+            output = "Available app commands:\n\n"
             for key in sorted(self.command_list):
                 output += key + " - " + self.command_list[key][1] + "\n"
             output += "===========\n"
-            output += "Available module commands:\n"
+            output += "Available module commands:\n\n"
             for key in sorted(self.app.CurrentModule.get_command_list()):
                 output += key + " - " + self.app.CurrentModule.get_command_list()[key]['description'] + "\n"
             output += "===========\n"
-            output += "Available pipes:"
+            output += "Available pipes:\n"
             for key in sorted(self.app.CurrentModule.get_pipe_list()):
                 output += "\n" + key + ":"
                 for cmd in self.app.CurrentModule.get_pipe_list()[key]:
-                    output += "\n    - " + cmd[1]
+                    output += "\n    - " + cmd["command"]
             output += "\n"
         return output
 
@@ -95,8 +99,8 @@ class CommandHandler:
             else:
                 output = "Please, provide CONFNAME to save"
         elif arguments[0] == "ls":
-            output = "Configuration files in 'configurations/application' directory:"
-            for file in os.listdir("configurations/application"):
+            output = f"Configuration files in '{self.app.get_workdir()}/configurations/application' directory:\n"
+            for file in os.listdir("configurations/AppConfig"):
                 output += file + "\n"
         else:
             output = "Please, use 'reset', 'ls', 'load' or 'save' methods"
@@ -118,10 +122,9 @@ class CommandHandler:
             output = "Please, provide CONFNAME to load"
         return output
 
-    def clear_pad(self)->str:
+    def clear_pad(self) -> str:
         self.app.mainPad.clear()
         self.app.mainPad.refresh()
-
         return ""
 
     def watch(self, arguments: [str, str, str]) -> str:
@@ -146,3 +149,27 @@ class CommandHandler:
             output = "Please, provide correct target: 'app' or 'module'"
 
         return output
+
+    def cat(self, arguments: [str]) -> str:
+        path = self.app.AppConfig.get_workdir()+"/"+arguments[0]
+        if os.path.exists(path):
+            with open(path, "r") as file:
+                output = file.read()
+        else:
+            output = f"No such file: {path}"
+
+        return output
+
+    def ls(self) -> str:
+        path = self.app.get_workdir()
+        output = ""
+        for element in os.listdir(path):
+            output+="\n"+element
+        return output.strip()
+
+    def rm(self, arguments: [str]) -> str:
+        target = self.app.get_workdir()+"/"+arguments[0]
+        os.remove(target)
+        return f'Successfully removed file {target}'
+
+

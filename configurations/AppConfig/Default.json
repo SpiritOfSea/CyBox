@@ -23,7 +23,7 @@
         ],
         "WORKDIR": [
             "str",
-            "/home/kali/Projects/CyBox",
+            "/home/kali/Projects/CyBox/DefaultProject",
             "current workdir"
         ],
         "USER": [

@@ -107,13 +107,19 @@ class AppConfiguration(Configuration):
         self.default_configuration = {
             "LIP": [str, "127.0.0.1", "local machine IP"],
             "TIP": [str, "127.0.0.1", "target machine IP"],
-            "WORKDIR": [str, self.get_workdir(), "current workdir"],
+            "WORKDIR": [str, self.get_current_workdir(), "current workdir"],
             "USER": [str, self.get_user(), "current user"],
             "_WATCHLIST": [list, ["LIP", "TIP", "WORKDIR", "USER"], "watchlist"]
         }
 
-    def get_workdir(self):
+    def get_current_workdir(self):
         workdir = os.path.abspath(os.getcwd())
+        return workdir
+
+    def get_workdir(self):
+        workdir = self.get_param("WORKDIR")[1]
+        if not os.path.exists(workdir):
+            os.makedirs(workdir, exist_ok=True)
         return workdir
 
     def get_user(self):
@@ -121,8 +127,10 @@ class AppConfiguration(Configuration):
         return username
 
     def load_default_configuration(self) -> [bool, str]:
-        if self.load_param_list(self.default_configuration)[0]:
+        if self.load_configuration_from_json("configurations/AppConfig/Default.json"):
             return [True, "Successfully loaded default configuration"]
+        elif self.load_param_list(self.default_configuration)[0]:
+            return [True, "Successfully loaded internal default configuration"]
         else:
             return [False, "Error occurred while loading default configuration"]
 
@@ -159,21 +167,6 @@ class ModuleConfiguration(Configuration):
         self.action_list = {}
         self.pipe_list = {}
         self.default_configuration = {
-            # "params": {},
-            # "actions": {
-            #     # "test": {"type": "os",
-            #     #          "command": "echo '%USER% %NAME%'",
-            #     #          "description": "echo random info",
-            #     #          "arguments": {     # %placeholder%: [%conf_type%, %param_name%, %can_be_piped%]
-            #     #              "%USER%": ["appconf", "USER", False],
-            #     #          }
-            # },
-            # "pipes": {
-            #     # "test_pipe": [     # [%target_module%, %command%, %print_result%, %takes_pipe%, ~%piped_param%
-            #     #     ["self", "lswdir", False, False],
-            #     #     ["self", "test", True, True, "%NAME%"]
-            #     # ]
-            # }
         }
 
     def load_default_configuration(self):

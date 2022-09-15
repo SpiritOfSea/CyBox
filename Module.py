@@ -1,5 +1,6 @@
 import ConfigHandler
 import subprocess
+from pathlib import Path
 
 
 class Module:
@@ -8,8 +9,8 @@ class Module:
         self.ModConfig = ConfigHandler.ModuleConfiguration()
         self.load_module(module)
 
-    def process_command(self, action, arguments=None) -> str:
-        action = self.ModConfig.action_list[action]
+    def process_command(self, action_key, arguments=None) -> str:
+        action = self.ModConfig.action_list[action_key]
         output = ""
         command = action["command"]
         for key in action["arguments"]:
@@ -22,8 +23,10 @@ class Module:
 
         if action["type"] == "os":
             output += subprocess.check_output(command, shell=True).decode()
-        else:
-            output += "NO OUTPUT"
+
+        if action["loggable"]:
+            self.write_log(action_key, output)
+
         return output
 
     def process_pipe(self, pipename) -> str:
@@ -35,18 +38,18 @@ class Module:
         pipe_stdout = ""
 
         for action in self.ModConfig.pipe_list[pipename]:
-            if action[0] == "self":
-                if action[3]:
-                    pipe_stdout = self.process_command(action[1], {action[4]: pipe_stdout})
+            if action["target"] == "self":
+                if action["takes_pipe"]:
+                    pipe_stdout = self.process_command(action["command"], {action["piped_param"]: pipe_stdout})
                 else:
-                    pipe_stdout = self.process_command(action[1])
-            elif action[0] == "app":
-                if action[3]:
-                    command = action[1].replace("%PIPE%", pipe_stdout)
+                    pipe_stdout = self.process_command(action["command"])
+            elif action["target"] == "app":
+                if action["takes_pipe"]:
+                    command = action["command"].replace("%PIPE%", pipe_stdout)
                 else:
-                    command = action[1]
+                    command = action["command"]
                 pipe_stdout = self.app.CommandHandler.process_command(command)
-            if action[2] and last_output != pipe_stdout:
+            if action["printable"] and last_output != pipe_stdout:
                 output += pipe_stdout
                 last_output = pipe_stdout
         return output.strip()+"\n"
@@ -58,6 +61,21 @@ class Module:
         return self.ModConfig.pipe_list
 
     def load_module(self, module: str) -> [bool, str]:
+        # "params": {},
+        # "actions": {
+        #     # "test": {"type": "os",
+        #     #          "command": "echo '%USER% %NAME%'",
+        #     #          "description": "echo random info",
+        #     #          "arguments": {     # %placeholder%: [%conf_type%, %param_name%, %can_be_piped%]
+        #     #              "%USER%": ["appconf", "USER", False],
+        #     #          }
+        # },
+        # "pipes": {
+        #     # "test_pipe": [     # [%target_module%, %command%, %print_result%, %takes_pipe%, ~%piped_param%
+        #     #     ["self", "lswdir", False, False],
+        #     #     ["self", "test", True, True, "%NAME%"]
+        #     # ]
+        # }
         return self.ModConfig.load_configuration_from_json(module)
 
     def save_module(self, module: str) -> [bool, str]:
@@ -69,3 +87,15 @@ class Module:
     def clear_pad(self):
         self.app.mainPad.clear()
         self.app.mainPad.refresh()
+
+    def write_log(self, target, content) -> bool:
+        wdir = self.app.AppConfig.get_workdir()
+        file = Path(wdir+"/"+target)
+        counter = 0
+        while file.is_file():
+            file=Path(wdir+"/"+target+"_"+str(counter))
+            counter += 1
+        with open(file, "w") as file:
+            file.write(content)
+
+        return True
